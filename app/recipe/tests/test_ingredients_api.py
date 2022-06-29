@@ -1,5 +1,5 @@
 """
-Tests for ingredients APIs
+Tests for the ingredients API.
 """
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -12,42 +12,47 @@ from core.models import Ingredient
 
 from recipe.serializers import IngredientSerializer
 
-INGREDIENT_URL = reverse('recipe:ingredient-list')
+
+INGREDIENTS_URL = reverse('recipe:ingredient-list')
+
 
 def detail_url(ingredient_id):
     """Create and return an ingredient detail URL."""
     return reverse('recipe:ingredient-detail', args=[ingredient_id])
 
+
 def create_user(email='user@example.com', password='testpass123'):
     """Create and return user."""
     return get_user_model().objects.create_user(email=email, password=password)
 
-class PublicIngredientApi(TestCase):
-    """Test on authenticated API requests."""
 
-    def setUp(self) -> None:
+class PublicIngredientsApiTests(TestCase):
+    """Test unauthenticated API requests."""
+
+    def setUp(self):
         self.client = APIClient()
 
     def test_auth_required(self):
         """Test auth is required for retrieving ingredients."""
-        res = self.client.get(INGREDIENT_URL)
+        res = self.client.get(INGREDIENTS_URL)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
-class PrivateIngredientApi(TestCase):
-    """Test unauthenticated API requests."""
 
-    def setUp(self) -> None:
+class PrivateIngredientsApiTests(TestCase):
+    """Test authenticated API requests."""
+
+    def setUp(self):
         self.user = create_user()
         self.client = APIClient()
         self.client.force_authenticate(self.user)
 
     def test_retrieve_ingredients(self):
-        """Test retrieving a list of ingredients"""
+        """Test retrieving a list of ingredients."""
         Ingredient.objects.create(user=self.user, name='Kale')
         Ingredient.objects.create(user=self.user, name='Vanilla')
 
-        res = self.client.get(INGREDIENT_URL)
+        res = self.client.get(INGREDIENTS_URL)
 
         ingredients = Ingredient.objects.all().order_by('-name')
         serializer = IngredientSerializer(ingredients, many=True)
@@ -60,7 +65,7 @@ class PrivateIngredientApi(TestCase):
         Ingredient.objects.create(user=user2, name='Salt')
         ingredient = Ingredient.objects.create(user=self.user, name='Pepper')
 
-        res = self.client.get(INGREDIENT_URL)
+        res = self.client.get(INGREDIENTS_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
